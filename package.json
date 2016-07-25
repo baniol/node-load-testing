@@ -1,0 +1,22 @@
+{
+  "name": "stream-play",
+  "version": "1.0.0",
+  "description": "",
+  "main": "001_split.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "~1.13.2",
+    "cookie-parser": "~1.3.5",
+    "debug": "~2.2.0",
+    "ejs": "~2.3.3",
+    "express": "~4.13.1",
+    "find-largest": "git@github.com:baniol/find-largest.git",
+    "morgan": "~1.6.1",
+    "serve-favicon": "~2.3.0"
+  }
+}
