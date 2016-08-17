@@ -1,17 +1,31 @@
-var http = require('http');
+const http = require('http');
+const stats = require('simple-statistics');
 
-function hrtime() { var hr = process.hrtime(); return hr[0]*1e3 + hr[1]*1e-6 }
+const iterations = 2000;
 
-const iterations = 100;
-
-for (let i=0;i<iterations;i++) {
-  createAgent();
-}
+const timeLimit = 40000;
 
 let success = 0;
 let errors = 0;
+let iteration = 0;
+
+const timeout = 40;
+
+const interval = setInterval(createAgent, timeout);
+
+const hstart = process.hrtime();
+const tStart = Date.now();
+
+const timeArray = [];
 
 function createAgent () {
+  iteration++;
+  const tDiff = Date.now() - tStart;
+  if (iteration > iterations || tDiff > timeLimit) {
+    clearInterval(interval);
+    displayReport();
+    process.exit(1);
+  }
   var options = {
     keepAlive:true,
     maxSockets:10
@@ -26,13 +40,14 @@ function createAgent () {
     method: 'GET',
     agent: agent
   };
-  const hrstart = process.hrtime();
+  const start = process.hrtime();
   var request = http.request(options, (res) => {
 
     // console.log(res.statusCode);
     if (res.statusCode === 200) {
-      const hrend = process.hrtime(hrstart);
-      console.info("%ds %dms", hrend[0], Math.ceil(hrend[1]/1000000));
+      const diff = process.hrtime(start);
+      const stop = parseInt(diff[0] * 1e3 + diff[1]*1e-6);
+      timeArray.push(stop);
       success++;
     }
     // res.setEncoding('utf8');
@@ -56,7 +71,14 @@ function createAgent () {
   // console.dir(agent);
 }
 
-setTimeout(() => {
+function displayReport() {
+  const hdiff = process.hrtime(hstart);
+  const hstop = parseInt(hdiff[0] * 1e3 + hdiff[1]*1e-6);
+  console.log(`The test took ${hstop/1000} seconds`);
+  const mean = stats.mean(timeArray);
+  const req = ((success * 1000) / hstop).toFixed(2);
   console.log('success: ', success);
   console.log('errors: ', errors);
-}, 3000);
+  console.log('req/sec: ', req);
+  console.log('mean: ', mean);
+}

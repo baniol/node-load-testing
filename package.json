@@ -18,7 +18,7 @@
     "find-largest": "git@github.com:baniol/find-largest.git",
     "morgan": "~1.6.1",
     "serve-favicon": "~2.3.0",
-    "websocket": "^1.0.23",
-    "ws": "^1.1.1"
+    "simple-statistics": "^2.1.0",
+    "websocket": "^1.0.23"
   }
 }
