@@ -18,7 +18,7 @@ const timeArray = [];
 
 // ---
 const agentOptions = {
-  keepAlive:false,
+  keepAlive:true,
   maxSockets:50
 };
 const options = {
