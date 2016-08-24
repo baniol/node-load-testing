@@ -11,13 +11,13 @@ const testDuration = 10000
  * Number of request per second for each concurrent agent
  * @private
  */
-const requestsPerSecond = 100
+const requestsPerSecond = 4
 
 /**
  * Number of concurrent agents
  * @private
  */
-const concurrentAgents = 4
+const concurrentAgents = 1
 
 /**
  * All issued requests counter
@@ -73,27 +73,28 @@ const agentOptions = {
 const options = {
   hostname: '192.168.33.13',
   port: 3000,
-  path: '/'
+  path: '/users'
 }
 
+// Create concurrent agents
 for (let a = 0; a < concurrentAgents; a++) {
   const agent = new Agent(agentOptions, options)
   agentArray.push(agent)
 }
 
+// Start issuing requests from each concurrent agent
 const requestDelay = 1000 / requestsPerSecond
 agentArray.forEach((agent) => {
   const interval = setInterval(sendRequest.bind(null, agent), requestDelay)
 })
 
+// Send one request from a http agent
 function sendRequest(agent) {
   requestsIssued++;
-  const start = process.hrtime();
+  const requestStartTime = process.hrtime();
   agent.request()
   .then(() => {
-    const diff = process.hrtime(start)
-    const stop = parseInt(diff[0] * 1e3 + diff[1]*1e-6)
-    timeArray.push(stop)
+    timeArray.push(getHrDiffTime(requestStartTime))
     checkEnd('ok')
   }).
   catch((err) => {
@@ -115,8 +116,7 @@ function checkEnd (type) {
     console.log('not recognised types')
   }
 
-  const tDiff = getHrDiffTime(testStart)
-  if (tDiff > testDuration) {
+  if (getHrDiffTime(testStart) > testDuration) {
     stats.displayReport(testStart, timeArray, successResponses, failReponses, requestsIssued)
     process.exit(1)
   }
@@ -124,8 +124,6 @@ function checkEnd (type) {
 
 // https://www.airpair.com/node.js/posts/top-10-mistakes-node-developers-make
 var getHrDiffTime = function(time) {
-  // ts = [seconds, nanoseconds]
   var ts = process.hrtime(time)
-  // convert seconds to miliseconds and nanoseconds to miliseconds as well
   return parseInt((ts[0] * 1000) + (ts[1] / 1000000))
 }
