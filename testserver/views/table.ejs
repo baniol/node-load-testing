@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Loop</title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <h2>Loop</h2>
+    <ul>
+        <% items.forEach(function(person) { %>
+            <li><%= person.first_name %></li>
+        <% }); %>
+    </ul>
+  </body>
+</html>

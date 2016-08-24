@@ -5,19 +5,19 @@ const stats = require('./loadlib/stats')
  * Duration of the load test in milliseconds
  * @private
  */
-const testDuration = 10000
+const testDuration = 60000
 
 /**
  * Number of request per second for each concurrent agent
  * @private
  */
-const requestsPerSecond = 4
+const requestsPerSecond = 10
 
 /**
  * Number of concurrent agents
  * @private
  */
-const concurrentAgents = 1
+const concurrentAgents = 10
 
 /**
  * All issued requests counter
@@ -29,13 +29,14 @@ let requestsIssued = 0
  * Successful request counter
  * @private
  */
-let successfulRequests = 0
+ let successResponses = 0
 
 /**
  * Failed requests counter
+ * @TODO api private?
  * @private
  */
-let failedRequests = 0
+let failReponses = 0
 
 /**
  * Hrtime tuple with test start timestamp
@@ -73,7 +74,7 @@ const agentOptions = {
 const options = {
   hostname: '192.168.33.13',
   port: 3000,
-  path: '/users'
+  path: '/table'
 }
 
 // Create concurrent agents
@@ -88,7 +89,11 @@ agentArray.forEach((agent) => {
   const interval = setInterval(sendRequest.bind(null, agent), requestDelay)
 })
 
-// Send one request from a http agent
+/**
+ * Send one request from a http agent
+ * @param {Object} agent
+ * @private
+ */
 function sendRequest(agent) {
   requestsIssued++;
   const requestStartTime = process.hrtime();
@@ -103,8 +108,6 @@ function sendRequest(agent) {
   })
 }
 
-let successResponses = 0
-let failReponses = 0
 function checkEnd (type) {
   if (type === 'ok') {
     successResponses++
