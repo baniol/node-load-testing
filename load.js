@@ -1,51 +1,111 @@
-const Agent = require('./loadlib/agent');
-const stats = require('./loadlib/stats');
+const Agent = require('./loadlib/agent')
+const stats = require('./loadlib/stats')
 
-const iterations = 400;
-const timeLimit = 40000;
-const timeout = 50;
+/**
+ * Duration of the load test in milliseconds
+ * @private
+ */
+const testDuration = 10000
 
-let success = 0;
-let errors = 0;
-let iteration = 0;
+/**
+ * Number of request per second for each concurrent agent
+ * @private
+ */
+const requestsPerSecond = 100
 
-const interval = setInterval(createAgent, timeout);
+/**
+ * Number of concurrent agents
+ * @private
+ */
+const concurrentAgents = 4
 
-const hstart = process.hrtime();
-const tStart = Date.now();
+/**
+ * All issued requests counter
+ * @private
+ */
+let requestsIssued = 0
 
-const timeArray = [];
+/**
+ * Successful request counter
+ * @private
+ */
+let successfulRequests = 0
 
-// ---
+/**
+ * Failed requests counter
+ * @private
+ */
+let failedRequests = 0
+
+/**
+ * Hrtime tuple with test start timestamp
+ * @private
+ */
+const testStart = process.hrtime()
+
+const timeArray = []
+const agentArray = []
+
 const agentOptions = {
   keepAlive:true,
   maxSockets:50
-};
+}
 const options = {
   hostname: '192.168.33.13',
   port: 3000,
-  path: '/users'
-};
+  path: '/'
+}
 
-function createAgent() {
-  iteration++;
-  const tDiff = Date.now() - tStart;
-  if (iteration > iterations || tDiff > timeLimit) {
-    clearInterval(interval);
-    stats.displayReport(hstart, timeArray, success, errors);
-    process.exit(1);
-  }
-  const agent = new Agent(agentOptions, options);
+for (let a = 0; a < concurrentAgents; a++) {
+  const agent = new Agent(agentOptions, options)
+  agentArray.push(agent)
+}
+
+const requestDelay = 1000 / requestsPerSecond
+agentArray.forEach((agent) => {
+  const interval = setInterval(sendRequest.bind(null, agent), requestDelay)
+})
+
+function sendRequest(agent) {
+  requestsIssued++;
   const start = process.hrtime();
-
   agent.request()
   .then(() => {
-    const diff = process.hrtime(start);
-    const stop = parseInt(diff[0] * 1e3 + diff[1]*1e-6);
-    timeArray.push(stop);
-    success++;
+    const diff = process.hrtime(start)
+    const stop = parseInt(diff[0] * 1e3 + diff[1]*1e-6)
+    timeArray.push(stop)
+    checkEnd('ok')
   }).
-  catch(() => {
-    errors++;
+  catch((err) => {
+    console.log('error: ', err);
+    checkEnd('fail')
   })
+}
+
+let successResponses = 0
+let failReponses = 0
+function checkEnd (type) {
+  if (type === 'ok') {
+    successResponses++
+  }
+  else if (type === 'fail') {
+    failReponses++
+  }
+  else {
+    console.log('not recognised types')
+  }
+
+  const tDiff = getHrDiffTime(testStart)
+  if (tDiff > testDuration) {
+    stats.displayReport(testStart, timeArray, successResponses, failReponses, requestsIssued)
+    process.exit(1)
+  }
+}
+
+// https://www.airpair.com/node.js/posts/top-10-mistakes-node-developers-make
+var getHrDiffTime = function(time) {
+  // ts = [seconds, nanoseconds]
+  var ts = process.hrtime(time)
+  // convert seconds to miliseconds and nanoseconds to miliseconds as well
+  return parseInt((ts[0] * 1000) + (ts[1] / 1000000))
 }

@@ -19,14 +19,15 @@ Agent.prototype.request = function () {
     const request = http.request(this.requestOptions, (res) => {
       if (res.statusCode === 200) {
         resolve(res);
+        request.destroy();
       }
       // @TODO - 400 codes reject ?
     });
-    request.end(); // @TODO ?
-    // request.destroy();
     request.on('error', (err) => {
-      reject();
+      reject(err);
+      request.destroy();
     });
+    request.end(); // @TODO ?
   });
 };
 
