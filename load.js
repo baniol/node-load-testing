@@ -43,13 +43,33 @@ let failedRequests = 0
  */
 const testStart = process.hrtime()
 
+/**
+ * Array of response times from each successful request
+ * @private
+ */
 const timeArray = []
+
+/**
+ * Array of concurrent agent objects
+ * @private
+ */
 const agentArray = []
 
+/**
+ * Object with settings for http.Agent
+ * https://nodejs.org/api/http.html#http_new_agent_options
+ * @private
+ */
 const agentOptions = {
   keepAlive:true,
   maxSockets:50
 }
+
+/**
+ * Object with connection settings:
+ * hostname, port, path
+ * @private
+ */
 const options = {
   hostname: '192.168.33.13',
   port: 3000,
