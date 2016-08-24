@@ -18,7 +18,7 @@ Agent.prototype.request = function () {
   return new Promise((resolve, reject) => {
     const request = http.request(this.requestOptions, (res) => {
       if (res.statusCode === 200) {
-        resolve(res);
+        resolve();
         request.destroy();
       }
       // @TODO - 400 codes reject ?

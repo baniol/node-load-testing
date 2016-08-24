@@ -5,19 +5,20 @@ const stats = require('./loadlib/stats')
  * Duration of the load test in milliseconds
  * @private
  */
-const testDuration = 60000
+const testDuration = 10000
 
 /**
  * Number of request per second for each concurrent agent
  * @private
  */
-const requestsPerSecond = 10
+const requestsPerSecond = 1000
+const requestDelay = 1000 / requestsPerSecond
 
 /**
  * Number of concurrent agents
  * @private
  */
-const concurrentAgents = 10
+let concurrentAgents = 100
 
 /**
  * All issued requests counter
@@ -30,6 +31,9 @@ let requestsIssued = 0
  * @private
  */
  let successResponses = 0
+
+ // @TODO name?
+ let tempCounter = 0
 
 /**
  * Failed requests counter
@@ -48,7 +52,7 @@ const testStart = process.hrtime()
  * Array of response times from each successful request
  * @private
  */
-const timeArray = []
+const requestArray = []
 
 /**
  * Array of concurrent agent objects
@@ -83,11 +87,43 @@ for (let a = 0; a < concurrentAgents; a++) {
   agentArray.push(agent)
 }
 
-// Start issuing requests from each concurrent agent
-const requestDelay = 1000 / requestsPerSecond
-agentArray.forEach((agent) => {
-  const interval = setInterval(sendRequest.bind(null, agent), requestDelay)
-})
+// ---------------
+
+
+
+// Add agents in interval
+// setTimeout(addAgent, 10000)
+// setTimeout(addAgent, 20000)
+
+startRequests()
+startSampling()
+
+function startRequests() {
+  // Start issuing requests from each concurrent agent
+  agentArray.forEach((agent) => {
+    const interval = setInterval(sendRequest.bind(null, agent), requestDelay)
+  })
+}
+
+let tempTime = testStart
+// tempCounter = successResponses
+// let doneResp = 0
+function startSampling() {
+  setInterval(() => {
+    const report = stats.reqSec(tempCounter, tempTime)
+    tempTime = process.hrtime()
+    console.log(report, tempCounter, getHrDiffTime(testStart))
+    tempCounter = 0
+
+  }, 2000)
+}
+
+function addAgent() {
+  concurrentAgents++
+  const agent = new Agent(agentOptions, options)
+  // agentArray.push()
+  setInterval(sendRequest.bind(null, agent), requestDelay)
+}
 
 /**
  * Send one request from a http agent
@@ -99,7 +135,10 @@ function sendRequest(agent) {
   const requestStartTime = process.hrtime();
   agent.request()
   .then(() => {
-    timeArray.push(getHrDiffTime(requestStartTime))
+    requestArray.push({
+      agents: concurrentAgents,
+      responseTime: getHrDiffTime(requestStartTime)
+    })
     checkEnd('ok')
   }).
   catch((err) => {
@@ -111,6 +150,7 @@ function sendRequest(agent) {
 function checkEnd (type) {
   if (type === 'ok') {
     successResponses++
+    tempCounter++
   }
   else if (type === 'fail') {
     failReponses++
@@ -120,7 +160,7 @@ function checkEnd (type) {
   }
 
   if (getHrDiffTime(testStart) > testDuration) {
-    stats.displayReport(testStart, timeArray, successResponses, failReponses, requestsIssued)
+    stats.displayReport(testStart, requestArray, successResponses, failReponses, requestsIssued)
     process.exit(1)
   }
 }
