@@ -1,102 +1,45 @@
 const Agent = require('./loadlib/agent')
 const stats = require('./loadlib/stats')
+const config = require('./config').config
+const utils = require('./loadlib/utils')
+const agentConfig = require('./config').agentConfig
+const requestConfig = require('./config').requestConfig
 
-/**
- * Duration of the load test in milliseconds
- * @private
- */
-const testDuration = 10000
+const top = require('./client')
+let topObject = {};
 
-/**
- * Number of request per second for each concurrent agent
- * @private
- */
-const requestsPerSecond = 1000
-const requestDelay = 1000 / requestsPerSecond
+top.topStream.on('data', (data) => {
+  const obj = top.parseTop(data.toString())
+  topObject = obj;
+});
 
-/**
- * Number of concurrent agents
- * @private
- */
-let concurrentAgents = 100
-
-/**
- * All issued requests counter
- * @private
- */
+const requestDelay = 1000 / config.requestsPerSecond
 let requestsIssued = 0
-
-/**
- * Successful request counter
- * @private
- */
- let successResponses = 0
-
- // @TODO name?
- let tempCounter = 0
-
-/**
- * Failed requests counter
- * @TODO api private?
- * @private
- */
+let successResponses = 0
 let failReponses = 0
+let samplingResponses = successResponses
+let samplingCounter = 0
+const sampleRate = config.testDuration / config.samplingRate
 
-/**
- * Hrtime tuple with test start timestamp
- * @private
- */
+let tempCounter = 0 // ?
+
 const testStart = process.hrtime()
-
-/**
- * Array of response times from each successful request
- * @private
- */
+let samplingTime = testStart
 const requestArray = []
-
-/**
- * Array of concurrent agent objects
- * @private
- */
+let tempArray = []
 const agentArray = []
 
-/**
- * Object with settings for http.Agent
- * https://nodejs.org/api/http.html#http_new_agent_options
- * @private
- */
-const agentOptions = {
-  keepAlive:true,
-  maxSockets:50
-}
+// --------------
 
-/**
- * Object with connection settings:
- * hostname, port, path
- * @private
- */
-const options = {
-  hostname: '192.168.33.13',
-  port: 3000,
-  path: '/table'
-}
-
-// Create concurrent agents
-for (let a = 0; a < concurrentAgents; a++) {
-  const agent = new Agent(agentOptions, options)
+for (let a = 0; a < config.concurrentAgents; a++) {
+  const agent = new Agent(agentConfig, requestConfig)
   agentArray.push(agent)
 }
 
-// ---------------
-
-
-
-// Add agents in interval
-// setTimeout(addAgent, 10000)
-// setTimeout(addAgent, 20000)
-
 startRequests()
-startSampling()
+
+console.log('% \t Req/sec \t Latency \t Cpu \t Memory')
+const sampling = setInterval(startSampling, sampleRate)
 
 function startRequests() {
   // Start issuing requests from each concurrent agent
@@ -105,52 +48,44 @@ function startRequests() {
   })
 }
 
-let tempTime = testStart
-// tempCounter = successResponses
-// let doneResp = 0
 function startSampling() {
-  setInterval(() => {
-    const report = stats.reqSec(tempCounter, tempTime)
-    tempTime = process.hrtime()
-    console.log(report, tempCounter, getHrDiffTime(testStart))
-    tempCounter = 0
-
-  }, 2000)
+  var reqsec = stats.partialRequestRate(samplingResponses, samplingTime)
+  const latency = stats.getLatency(tempArray)
+  samplingCounter = samplingCounter + config.samplingRate
+  console.log(`${samplingCounter}  \t ${reqsec} \t ${latency} \t ${topObject.cpu} \t ${topObject.mem}`)
+  samplingTime = process.hrtime()
+  samplingResponses = 0
+  tempArray = []
 }
 
-function addAgent() {
-  concurrentAgents++
-  const agent = new Agent(agentOptions, options)
-  // agentArray.push()
-  setInterval(sendRequest.bind(null, agent), requestDelay)
-}
-
-/**
- * Send one request from a http agent
- * @param {Object} agent
- * @private
- */
 function sendRequest(agent) {
   requestsIssued++;
   const requestStartTime = process.hrtime();
   agent.request()
   .then(() => {
+    // @TODO Array pushes move to checkEnd success
     requestArray.push({
-      agents: concurrentAgents,
-      responseTime: getHrDiffTime(requestStartTime)
+      agents: config.concurrentAgents,
+      responseTime: utils.getElapsedTime(requestStartTime)
+    })
+    tempArray.push({
+      agents: config.concurrentAgents,
+      responseTime: utils.getElapsedTime(requestStartTime)
     })
     checkEnd('ok')
   }).
   catch((err) => {
-    console.log('error: ', err);
+    // console.log('error: ', err);
     checkEnd('fail')
   })
 }
 
+// @TODO change name
 function checkEnd (type) {
   if (type === 'ok') {
     successResponses++
-    tempCounter++
+    samplingResponses++
+    // tempCounter++
   }
   else if (type === 'fail') {
     failReponses++
@@ -159,14 +94,8 @@ function checkEnd (type) {
     console.log('not recognised types')
   }
 
-  if (getHrDiffTime(testStart) > testDuration) {
+  if (utils.getElapsedTime(testStart) > config.testDuration) {
     stats.displayReport(testStart, requestArray, successResponses, failReponses, requestsIssued)
     process.exit(1)
   }
-}
-
-// https://www.airpair.com/node.js/posts/top-10-mistakes-node-developers-make
-var getHrDiffTime = function(time) {
-  var ts = process.hrtime(time)
-  return parseInt((ts[0] * 1000) + (ts[1] / 1000000))
 }

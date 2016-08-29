@@ -12,16 +12,21 @@ function displayReport(hstart, requestArray, success, errors, issued) {
   //
   // writeFiles(timeArray, agents);
 
-  const mean = stats.mean(timeArray)
-  const req = reqSec(success, hstart)
-  console.log('issued requests: ', issued)
-  console.log('success: ', success)
-  console.log('errors: ', errors)
-  console.log('req/sec: ', req)
-  console.log('mean: ', mean)
+  const mean = stats.mean(timeArray).toFixed(2)
+  const req = partialRequestRate(success, hstart)
+  console.log('issued requests:\t', issued)
+  console.log('success:\t', success)
+  console.log('errors:\t', errors)
+  console.log('req/sec:\t', req)
+  console.log('mean:\t', mean)
 }
 
-function reqSec(success, hstart) {
+function getLatency(requestArray) {
+  const timeArray = requestArray.map((el) => el.responseTime)
+  return stats.mean(timeArray).toFixed(2)
+}
+
+function partialRequestRate(success, hstart) {
   // @TODO unify
   const hdiff = process.hrtime(hstart)
   const hstop = parseInt(hdiff[0] * 1e3 + hdiff[1]*1e-6)
@@ -34,4 +39,5 @@ function writeFiles (timeArray, agents) {
 }
 
 exports.displayReport = displayReport
-exports.reqSec = reqSec
+exports.partialRequestRate = partialRequestRate
+exports.getLatency = getLatency
