@@ -6,12 +6,18 @@ const agentConfig = require('./config').agentConfig
 const requestConfig = require('./config').requestConfig
 
 const top = require('./client')
-let topObject = {};
-
+let topObject = {}
 top.topStream.on('data', (data) => {
   const obj = top.parseTop(data.toString())
   topObject = obj;
 });
+
+const fdStream = require('./fdstream')
+let fd = 0;
+fdStream.on('data', (data) => {
+  fd = data.toString();
+});
+
 
 const requestDelay = 1000 / config.requestsPerSecond
 let requestsIssued = 0
@@ -38,7 +44,7 @@ for (let a = 0; a < config.concurrentAgents; a++) {
 
 startRequests()
 
-console.log('% \t Req/sec \t Latency \t Cpu \t Memory')
+console.log('% \t Req/sec \t Latency \t Cpu \t Memory \t Fd')
 const sampling = setInterval(startSampling, sampleRate)
 
 function startRequests() {
@@ -52,7 +58,7 @@ function startSampling() {
   var reqsec = stats.partialRequestRate(samplingResponses, samplingTime)
   const latency = stats.getLatency(tempArray)
   samplingCounter = samplingCounter + config.samplingRate
-  console.log(`${samplingCounter}  \t ${reqsec} \t ${latency} \t ${topObject.cpu} \t ${topObject.mem}`)
+  console.log(`${samplingCounter}  \t ${reqsec} \t ${latency} \t ${topObject.cpu} \t ${topObject.mem} \t ${fd}`)
   samplingTime = process.hrtime()
   samplingResponses = 0
   tempArray = []
