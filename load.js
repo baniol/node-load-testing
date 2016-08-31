@@ -4,20 +4,20 @@ const config = require('./config').config
 const utils = require('./loadlib/utils')
 const agentConfig = require('./config').agentConfig
 const requestConfig = require('./config').requestConfig
+const statStreams = require('./loadlib/statStreams')
 
-const top = require('./client')
+const top = statStreams.topStream
 let topObject = {}
-top.topStream.on('data', (data) => {
-  const obj = top.parseTop(data.toString())
+top.on('data', (data) => {
+  const obj = statStreams.parseTop(data.toString())
   topObject = obj;
 });
 
-const fdStream = require('./fdstream')
+const fdStream = statStreams.fdStream
 let fd = 0;
 fdStream.on('data', (data) => {
   fd = data.toString();
 });
-
 
 const requestDelay = 1000 / config.requestsPerSecond
 let requestsIssued = 0
