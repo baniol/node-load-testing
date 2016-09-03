@@ -5,18 +5,25 @@ const utils = require('./loadlib/utils')
 const agentConfig = require('./config').agentConfig
 const requestConfig = require('./config').requestConfig
 const statStreams = require('./loadlib/statStreams')
+const Table = require('cli-table') // @TODO to stats
 
 const top = statStreams.topStream
 let topObject = {}
+const cpuArray = []
+const memArray = []
 top.on('data', (data) => {
   const obj = statStreams.parseTop(data.toString())
-  topObject = obj;
+  topObject = obj
+  // cpuArray.push(obj.cpu)
+  // memArray.push(obj.mem)
 });
 
 const fdStream = statStreams.fdStream
-let fd = 0;
+let fd = 0
+const fdArray = []
 fdStream.on('data', (data) => {
-  fd = data.toString();
+  fd = parseInt(data.toString())
+  fdArray.push(fd)
 });
 
 const requestDelay = 1000 / config.requestsPerSecond
@@ -44,7 +51,14 @@ for (let a = 0; a < config.concurrentAgents; a++) {
 
 startRequests()
 
-console.log('% \t Req/sec \t Latency \t Cpu \t Memory \t Fd')
+var table = new Table({
+    head: ['%', 'Req/sec', 'Latency', 'CPU', 'Memory', 'Fd']
+  , colWidths: [5, 10, 10, 10, 10, 10]
+})
+
+console.log(table.toString())
+
+// console.log('% \t Req/sec \t Latency \t Cpu \t Memory \t Fd')
 const sampling = setInterval(startSampling, sampleRate)
 
 function startRequests() {
@@ -58,7 +72,13 @@ function startSampling() {
   var reqsec = stats.partialRequestRate(samplingResponses, samplingTime)
   const latency = stats.getLatency(tempArray)
   samplingCounter = samplingCounter + config.samplingRate
-  console.log(`${samplingCounter}  \t ${reqsec} \t ${latency} \t ${topObject.cpu} \t ${topObject.mem} \t ${fd}`)
+  // console.log(`${samplingCounter}  \t ${reqsec} \t ${latency} \t ${topObject.cpu} \t ${topObject.mem} \t ${fd}`)
+  const tableRow = new Table({
+      // head: ['%', 'Req/sec', 'Latency', 'CPU', 'Memory', 'Fd']
+    colWidths: [5, 10, 10, 10, 10, 10]
+  })
+  tableRow.push([samplingCounter, reqsec, latency, topObject.cpu, topObject.mem, fd])
+  console.log(tableRow.toString())
   samplingTime = process.hrtime()
   samplingResponses = 0
   tempArray = []
@@ -101,7 +121,7 @@ function checkEnd (type) {
   }
 
   if (utils.getElapsedTime(testStart) > config.testDuration) {
-    stats.displayReport(testStart, requestArray, successResponses, failReponses, requestsIssued)
+    stats.displayReport(testStart, requestArray, successResponses, failReponses, requestsIssued, fdArray, cpuArray, memArray)
     process.exit(1)
   }
 }

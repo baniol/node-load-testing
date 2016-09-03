@@ -1,7 +1,9 @@
 const stats = require('simple-statistics')
+const Table = require('cli-table')
 const fs = require('fs')
 
-function displayReport(hstart, requestArray, success, errors, issued) {
+function displayReport(hstart, requestArray, success, errors, issued, fdArray) {
+
   // @TODO unify
   const hdiff = process.hrtime(hstart)
   const hstop = parseInt(hdiff[0] * 1e3 + hdiff[1]*1e-6)
@@ -14,11 +16,33 @@ function displayReport(hstart, requestArray, success, errors, issued) {
 
   const mean = stats.mean(timeArray).toFixed(2)
   const req = partialRequestRate(success, hstart)
-  console.log('issued requests:\t', issued)
-  console.log('success:\t', success)
-  console.log('errors:\t', errors)
-  console.log('req/sec:\t', req)
-  console.log('mean:\t', mean)
+  // console.log('issued requests:\t', issued)
+  // console.log('success:\t', success)
+  // console.log('errors:\t', errors)
+  // console.log('req/sec:\t', req)
+  // console.log('mean:\t', mean)
+
+  var table = new Table();
+
+  function sortNumber(a,b) {
+    return a - b
+  }
+
+  // const cpuMax = cpuArray.sort(sortNumber).pop()
+
+  table.push(
+      { 'Issued requests': issued },
+      { 'Success': success },
+      { 'Errors': errors },
+      { 'Req/sec': req },
+      { 'Mean': mean },
+      { 'Fd max': fdArray.sort(sortNumber).pop() }
+      // { 'Cpu max':  cpuMax}
+      // { 'Memory max': MemArray.sort(sortNumber).pop() }
+  )
+
+  console.log(table.toString())
+
 }
 
 function getLatency(requestArray) {
