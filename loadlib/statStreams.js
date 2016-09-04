@@ -2,9 +2,9 @@ const net = require('net');
 const config = require('../config')
 
 const topStream = net.connect({port: 7777, host: config.requestConfig.hostname}, () => {});
-topStream.on('data', (data) => {
-  parseTop(data.toString());
-});
+// topStream.on('data', (data) => {
+//   parseTop(data.toString());
+// });
 // topStream.on('end', () => {
 //   console.log('disconnected from server');
 // });
@@ -24,13 +24,10 @@ exports.fdStream = fdStream
 const statsKeys = ['user', 'pr', 'ni', 'virt', 'res', 'shr', 's', 'cpu', 'mem', 'time', 'command']
 
 function parseTop(data) {
-  const lines = data.toString().split('\n')
-  const processLine = lines[lines.length - 1]
-  const pp = processLine.split(/\s+/)
-  const len = statsKeys.length
-  const statsObject = {}
-  for (let i=0; i<len; i++) {
-    statsObject[statsKeys[i]] = pp[i+1]
+  const str = data.toString()
+  const parts = str.split(' ')
+  return {
+    cpu: parts[0],
+    mem: parts[1]
   }
-  return statsObject
 }

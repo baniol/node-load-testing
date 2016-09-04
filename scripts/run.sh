@@ -14,5 +14,5 @@ SERVER_PID=$!
 
 while true; do lsof -p ${SERVER_PID} | grep ESTABLISHED | wc -l;sleep 0.1; done | nc -l 7778 -k &
 echo $! >> pids
-top -b -p ${SERVER_PID} | nc -l 7777 -k &
+while true; do top -b -n 1 -p ${SERVER_PID} | tail -n 1 | awk "{print \$9,\$10}";sleep 0.2;done | nc -l 7777 -k &
 echo $! >> pids
