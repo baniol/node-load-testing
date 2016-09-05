@@ -12,8 +12,7 @@ let topObject = {}
 const cpuArray = []
 const memArray = []
 top.on('data', (data) => {
-  // @TODO transform in stats module
-  const obj = statStreams.parseTop(data.toString())
+  const obj = JSON.parse(data.toString());
   topObject = obj
   // cpuArray.push(obj.cpu)
   // memArray.push(obj.mem)
