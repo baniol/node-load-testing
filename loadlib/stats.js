@@ -2,7 +2,7 @@ const stats = require('simple-statistics')
 const Table = require('cli-table')
 const fs = require('fs')
 
-function displayReport(hstart, requestArray, success, errors, issued, fdArray) {
+function displayReport(hstart, requestArray, success, errors, issued, fdArray, cpuArray) {
 
   // @TODO unify
   const hdiff = process.hrtime(hstart)
@@ -36,6 +36,7 @@ function displayReport(hstart, requestArray, success, errors, issued, fdArray) {
       { 'Errors': errors },
       { 'Req/sec': req },
       { 'Mean': mean },
+      { 'Cpu avg': getPartialCpu(cpuArray) },
       { 'Fd max': fdArray.sort(sortNumber).pop() }
       // { 'Cpu max':  cpuMax}
       // { 'Memory max': MemArray.sort(sortNumber).pop() }
@@ -48,6 +49,11 @@ function displayReport(hstart, requestArray, success, errors, issued, fdArray) {
 function getLatency(requestArray) {
   const timeArray = requestArray.map((el) => el.responseTime)
   return stats.mean(timeArray).toFixed(2)
+}
+
+// @TODO change name
+function getPartialCpu(cpuArray) {
+  return stats.mean(cpuArray).toFixed(2)
 }
 
 function partialRequestRate(success, hstart) {
@@ -64,4 +70,5 @@ function writeFiles (timeArray, agents) {
 
 exports.displayReport = displayReport
 exports.partialRequestRate = partialRequestRate
+exports.getPartialCpu = getPartialCpu
 exports.getLatency = getLatency

@@ -8,13 +8,15 @@ const statStreams = require('./loadlib/statStreams')
 const Table = require('cli-table') // @TODO to stats
 
 const top = statStreams.topStream
-let topObject = {}
-const cpuArray = []
+let topObject = {} // @TODO not used ?
+const cpuArray = [] // @TODO not used ?
+let tempCpuArray = [] // ?
 const memArray = []
 top.on('data', (data) => {
   const obj = JSON.parse(data.toString());
   topObject = obj
-  // cpuArray.push(obj.cpu)
+  cpuArray.push(obj.cpu)
+  tempCpuArray.push(obj.cpu)
   // memArray.push(obj.mem)
 });
 
@@ -34,8 +36,6 @@ let samplingResponses = successResponses
 let samplingCounter = 0
 const sampleRate = config.testDuration / config.samplingRate
 
-let tempCounter = 0 // ?
-
 const testStart = process.hrtime()
 let samplingTime = testStart
 const requestArray = []
@@ -53,7 +53,7 @@ startRequests()
 
 var table = new Table({
     head: ['%', 'Req/sec', 'Latency', 'CPU', 'Memory', 'Fd']
-  , colWidths: [5, 10, 10, 10, 10, 10]
+  , colWidths: [5, 8, 8, 8, 8, 8]
 })
 
 console.log(table.toString())
@@ -72,16 +72,14 @@ function startSampling() {
   var reqsec = stats.partialRequestRate(samplingResponses, samplingTime)
   const latency = stats.getLatency(tempArray)
   samplingCounter = samplingCounter + config.samplingRate
-  // console.log(`${samplingCounter}  \t ${reqsec} \t ${latency} \t ${topObject.cpu} \t ${topObject.mem} \t ${fd}`)
-  const tableRow = new Table({
-      // head: ['%', 'Req/sec', 'Latency', 'CPU', 'Memory', 'Fd']
-    colWidths: [5, 10, 10, 10, 10, 10]
-  })
-  tableRow.push([samplingCounter, reqsec, latency, topObject.cpu, topObject.mem, fd])
+  const tableRow = new Table({colWidths: [5, 8, 8, 8, 8, 8]})
+  const cpuAvg = stats.getPartialCpu(tempCpuArray)
+  tableRow.push([samplingCounter, reqsec, latency, cpuAvg, topObject.mem, fd])
   console.log(tableRow.toString())
   samplingTime = process.hrtime()
   samplingResponses = 0
   tempArray = []
+  tempCpuArray = []
 }
 
 function sendRequest(agent) {
@@ -111,7 +109,6 @@ function checkEnd (type) {
   if (type === 'ok') {
     successResponses++
     samplingResponses++
-    // tempCounter++
   }
   else if (type === 'fail') {
     failReponses++

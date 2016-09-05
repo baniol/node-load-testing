@@ -1,5 +1,5 @@
 exports.config = {
-  testDuration: 20000,
+  testDuration: 10000,
   requestsPerSecond: 30,
   concurrentAgents: 5,
   samplingRate: 10
