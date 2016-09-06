@@ -1,8 +1,9 @@
 const stats = require('simple-statistics')
 const Table = require('cli-table')
 const fs = require('fs')
+const columnify = require('columnify')
 
-function displayReport(hstart, requestArray, success, errors, issued, fdArray, cpuArray) {
+function displayReport(hstart, requestArray, success, errors, issued, fdArray, cpuArray, memArray, end) {
 
   // @TODO unify
   const hdiff = process.hrtime(hstart)
@@ -16,33 +17,29 @@ function displayReport(hstart, requestArray, success, errors, issued, fdArray, c
 
   const mean = stats.mean(timeArray).toFixed(2)
   const req = partialRequestRate(success, hstart)
-  // console.log('issued requests:\t', issued)
-  // console.log('success:\t', success)
-  // console.log('errors:\t', errors)
-  // console.log('req/sec:\t', req)
-  // console.log('mean:\t', mean)
-
-  var table = new Table();
 
   function sortNumber(a,b) {
     return a - b
   }
 
   // const cpuMax = cpuArray.sort(sortNumber).pop()
+  const fdMax = fdArray.sort(sortNumber).pop()
+  const cpuAvg = getPartialCpu(cpuArray)
+  const memAvg = getMemAvg(memArray)
 
-  table.push(
-      { 'Issued requests': issued },
-      { 'Success': success },
-      { 'Errors': errors },
-      { 'Req/sec': req },
-      { 'Mean': mean },
-      { 'Cpu avg': getPartialCpu(cpuArray) },
-      { 'Fd max': fdArray.sort(sortNumber).pop() }
-      // { 'Cpu max':  cpuMax}
-      // { 'Memory max': MemArray.sort(sortNumber).pop() }
-  )
+  const data = {
+    Requests: issued,
+    Success: success,
+    Erros: errors,
+    'Req/sec': req,
+    Mean: mean,
+    'Cpu avg': cpuAvg,
+    'Mem avg': memAvg,
+    'Fd max': fdMax
+  }
 
-  console.log(table.toString())
+  console.log(columnify(data))
+  end()
 
 }
 
@@ -54,6 +51,10 @@ function getLatency(requestArray) {
 // @TODO change name
 function getPartialCpu(cpuArray) {
   return stats.mean(cpuArray).toFixed(2)
+}
+
+function getMemAvg(memArray) {
+  return stats.mean(memArray).toFixed(2)
 }
 
 function partialRequestRate(success, hstart) {
@@ -71,4 +72,5 @@ function writeFiles (timeArray, agents) {
 exports.displayReport = displayReport
 exports.partialRequestRate = partialRequestRate
 exports.getPartialCpu = getPartialCpu
+exports.getMemAvg = getMemAvg
 exports.getLatency = getLatency

@@ -9,15 +9,17 @@ const Table = require('cli-table') // @TODO to stats
 
 const top = statStreams.topStream
 let topObject = {} // @TODO not used ?
-const cpuArray = [] // @TODO not used ?
+const cpuArray = [] // for final stats
+const memArray = [] // for final stats
 let tempCpuArray = [] // ?
-const memArray = []
+let tempMemArray = [] // ?
 top.on('data', (data) => {
   const obj = JSON.parse(data.toString());
   topObject = obj
   cpuArray.push(obj.cpu)
+  memArray.push(obj.mem)
   tempCpuArray.push(obj.cpu)
-  // memArray.push(obj.mem)
+  tempMemArray.push(obj.mem)
 });
 
 const fdStream = statStreams.fdStream
@@ -64,7 +66,7 @@ const sampling = setInterval(startSampling, sampleRate)
 function startRequests() {
   // Start issuing requests from each concurrent agent
   agentArray.forEach((agent) => {
-    const interval = setInterval(sendRequest.bind(null, agent), requestDelay)
+    agent.interval = setInterval(sendRequest.bind(null, agent), requestDelay)
   })
 }
 
@@ -74,16 +76,21 @@ function startSampling() {
   samplingCounter = samplingCounter + config.samplingRate
   const tableRow = new Table({colWidths: [5, 8, 8, 8, 8, 8]})
   const cpuAvg = stats.getPartialCpu(tempCpuArray)
-  tableRow.push([samplingCounter, reqsec, latency, cpuAvg, topObject.mem, fd])
+  const memAvg = stats.getMemAvg(tempMemArray)
+  tableRow.push([samplingCounter, reqsec, latency, cpuAvg, memAvg, fd])
   console.log(tableRow.toString())
   samplingTime = process.hrtime()
   samplingResponses = 0
   tempArray = []
   tempCpuArray = []
+  tempMemArray = []
 }
 
 function sendRequest(agent) {
   requestsIssued++;
+  if (utils.getElapsedTime(testStart) > config.testDuration) {
+    clearInterval(agent.interval);
+  }
   const requestStartTime = process.hrtime();
   agent.request()
   .then(() => {
@@ -106,6 +113,7 @@ function sendRequest(agent) {
 
 // @TODO change name
 function checkEnd (type) {
+  // let finishedRequests = 0
   if (type === 'ok') {
     successResponses++
     samplingResponses++
@@ -117,8 +125,9 @@ function checkEnd (type) {
     console.log('not recognised types')
   }
 
-  if (utils.getElapsedTime(testStart) > config.testDuration) {
-    stats.displayReport(testStart, requestArray, successResponses, failReponses, requestsIssued, fdArray, cpuArray, memArray)
-    process.exit(1)
+  if (utils.getElapsedTime(testStart) > config.testDuration && requestsIssued === successResponses) {
+    stats.displayReport(testStart, requestArray, successResponses, failReponses, requestsIssued, fdArray, cpuArray, memArray, () => {
+      process.exit(1)
+    })
   }
 }

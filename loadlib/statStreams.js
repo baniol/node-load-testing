@@ -8,7 +8,7 @@ const topTransform = new Transform({
     const parts = str.split(' ')
     const obj = {
       cpu: parts[0],
-      mem: parts[1]
+      mem: parseFloat(parts[1].trim())
     }
     callback(null, JSON.stringify(obj))
   }
