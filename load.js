@@ -5,7 +5,6 @@ const utils = require('./loadlib/utils')
 const agentConfig = require('./config').agentConfig
 const requestConfig = require('./config').requestConfig
 const statStreams = require('./loadlib/statStreams')
-const Table = require('cli-table') // @TODO to stats
 
 const top = statStreams.topStream
 let topObject = {} // @TODO not used ?
@@ -13,6 +12,7 @@ const cpuArray = [] // for final stats
 const memArray = [] // for final stats
 let tempCpuArray = [] // ?
 let tempMemArray = [] // ?
+const progressArray = []
 top.on('data', (data) => {
   const obj = JSON.parse(data.toString());
   topObject = obj
@@ -34,9 +34,7 @@ const requestDelay = 1000 / config.requestsPerSecond
 let requestsIssued = 0
 let successResponses = 0
 let failReponses = 0
-let samplingResponses = successResponses
-let samplingCounter = 0
-const sampleRate = config.testDuration / config.samplingRate
+let totalResponses = 0
 
 const testStart = process.hrtime()
 let samplingTime = testStart
@@ -53,16 +51,6 @@ for (let a = 0; a < config.concurrentAgents; a++) {
 
 startRequests()
 
-var table = new Table({
-    head: ['%', 'Req/sec', 'Latency', 'CPU', 'Memory', 'Fd']
-  , colWidths: [5, 8, 8, 8, 8, 8]
-})
-
-console.log(table.toString())
-
-// console.log('% \t Req/sec \t Latency \t Cpu \t Memory \t Fd')
-const sampling = setInterval(startSampling, sampleRate)
-
 function startRequests() {
   // Start issuing requests from each concurrent agent
   agentArray.forEach((agent) => {
@@ -78,7 +66,7 @@ function startSampling() {
   const cpuAvg = stats.getPartialCpu(tempCpuArray)
   const memAvg = stats.getMemAvg(tempMemArray)
   tableRow.push([samplingCounter, reqsec, latency, cpuAvg, memAvg, fd])
-  console.log(tableRow.toString())
+  // console.log(tableRow.toString())
   samplingTime = process.hrtime()
   samplingResponses = 0
   tempArray = []
@@ -88,8 +76,8 @@ function startSampling() {
 
 function sendRequest(agent) {
   requestsIssued++;
-  if (utils.getElapsedTime(testStart) > config.testDuration) {
-    clearInterval(agent.interval);
+  if (requestsIssued >= config.numberOfRequests) {
+    clearInterval(agent.interval)
   }
   const requestStartTime = process.hrtime();
   agent.request()
@@ -113,19 +101,28 @@ function sendRequest(agent) {
 
 // @TODO change name
 function checkEnd (type) {
-  // let finishedRequests = 0
+
   if (type === 'ok') {
     successResponses++
-    samplingResponses++
+    totalResponses++
   }
   else if (type === 'fail') {
     failReponses++
+    totalResponses++
   }
   else {
     console.log('not recognised types')
   }
 
-  if (utils.getElapsedTime(testStart) > config.testDuration && requestsIssued === successResponses) {
+  const p = parseInt((totalResponses / config.numberOfRequests) * 100, 10);
+  if (p % 10 === 0 && progressArray.indexOf(p) === -1 && p > 0) {
+    progressArray.push(p)
+    console.log(`${p}%`);
+    // console.log(progressArray.unshift());
+  }
+
+
+  if (totalResponses >= config.numberOfRequests) {
     stats.displayReport(testStart, requestArray, successResponses, failReponses, requestsIssued, fdArray, cpuArray, memArray, () => {
       process.exit(1)
     })
