@@ -117,7 +117,7 @@ function checkEnd (type) {
   const p = parseInt((totalResponses / config.numberOfRequests) * 100, 10);
   if (p % 10 === 0 && progressArray.indexOf(p) === -1 && p > 0) {
     progressArray.push(p)
-    console.log(`${p}%`);
+    console.log(`${p}% (success: ${successResponses}; errors: ${failReponses})`);
     // console.log(progressArray.unshift());
   }
 

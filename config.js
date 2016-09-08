@@ -1,7 +1,7 @@
 exports.config = {
   testDuration: 10000, // used ?
-  numberOfRequests: 1000,
-  requestsPerSecond: 10,
+  numberOfRequests: 3000,
+  requestsPerSecond: 100,
   concurrentAgents: 10,
   samplingRate: 10
 }
@@ -15,5 +15,5 @@ exports.requestConfig = {
   // hostname: '52.57.29.116',
   hostname: '192.168.33.13',
   port: 3000,
-  path: '/table'
+  path: '/'
 }
