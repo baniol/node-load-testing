@@ -10,16 +10,12 @@ const top = statStreams.topStream
 let topObject = {} // @TODO not used ?
 const cpuArray = [] // for final stats
 const memArray = [] // for final stats
-let tempCpuArray = [] // ?
-let tempMemArray = [] // ?
 const progressArray = []
 top.on('data', (data) => {
   const obj = JSON.parse(data.toString());
   topObject = obj
   cpuArray.push(obj.cpu)
   memArray.push(obj.mem)
-  tempCpuArray.push(obj.cpu)
-  tempMemArray.push(obj.mem)
 });
 
 const fdStream = statStreams.fdStream
@@ -56,22 +52,6 @@ function startRequests() {
   agentArray.forEach((agent) => {
     agent.interval = setInterval(sendRequest.bind(null, agent), requestDelay)
   })
-}
-
-function startSampling() {
-  var reqsec = stats.partialRequestRate(samplingResponses, samplingTime)
-  const latency = stats.getLatency(tempArray)
-  samplingCounter = samplingCounter + config.samplingRate
-  const tableRow = new Table({colWidths: [5, 8, 8, 8, 8, 8]})
-  const cpuAvg = stats.getPartialCpu(tempCpuArray)
-  const memAvg = stats.getMemAvg(tempMemArray)
-  tableRow.push([samplingCounter, reqsec, latency, cpuAvg, memAvg, fd])
-  // console.log(tableRow.toString())
-  samplingTime = process.hrtime()
-  samplingResponses = 0
-  tempArray = []
-  tempCpuArray = []
-  tempMemArray = []
 }
 
 function sendRequest(agent) {
@@ -118,7 +98,6 @@ function checkEnd (type) {
   if (p % 10 === 0 && progressArray.indexOf(p) === -1 && p > 0) {
     progressArray.push(p)
     console.log(`${p}%`);
-    // console.log(progressArray.unshift());
   }
 
 
