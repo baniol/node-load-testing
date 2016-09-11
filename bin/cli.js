@@ -1,22 +1,29 @@
 #!/usr/bin/env node
 
-var minimist = require('minimist');
-var fs = require('fs');
+const minimist = require('minimist')
+const fs = require('fs')
+const config = require('../config').config
+const load = require('../lib/load.js')
 
-var load = require('../lib/load.js');
+// example:
+// simple-load-test -h myhost.com -p 3000 -u /path -r 20 -c 5 -n 100
 
-var argv = minimist(process.argv.slice(2), {
-  alias: {h: 'help', n: 'num-req', r: 'rate', c: 'concurrency'}
-});
+const argv = minimist(process.argv.slice(2), {
+  alias: {h: 'host', p: 'port', u: 'uri', n: 'num-req', r: 'rate', c: 'concurrency', s: 'stats'}
+})
 
 if (argv.help) {
-  return fs.createReadStream(__dirname + '/usage.txt').pipe(process.stdout);
+  return fs.createReadStream(__dirname + '/usage.txt').pipe(process.stdout)
 }
 
 const options = {
-  numberOfRequests: argv['num-req'],
-  requestsPerSecond: argv.rate,
-  concurrentAgents: argv.concurrency
+  host: argv.host,
+  port: argv.port,
+  path: argv.uri,
+  numberOfRequests: argv['num-req'] || config.numberOfRequests,
+  requestsPerSecond: argv.rate || config.requestsPerSecond,
+  concurrentAgents: argv.concurrency || config.concurrentAgents,
+  statStream: argv.stats || config.statStream
 }
 
 load.start(options)

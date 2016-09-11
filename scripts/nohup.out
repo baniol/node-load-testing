@@ -8,3 +8,7 @@ single process
 pid 30127
 single process
 pid 20944
+lsof: WARNING: can't stat() tmpfs file system /run/user/0
+      Output information may be incomplete.
+lsof: WARNING: can't stat() tmpfs file system /run/user/0
+      Output information may be incomplete.
