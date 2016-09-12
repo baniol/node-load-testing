@@ -6,7 +6,7 @@ const config = require('../config').config
 const load = require('../lib/load.js')
 
 // example:
-// simple-load-test -h myhost.com -p 3000 -u /path -r 20 -c 5 -n 100
+// simple-load-test -h myhost.com -p 3000 -u /path -r 20 -c 5 -n 100 -s 1
 
 const argv = minimist(process.argv.slice(2), {
   alias: {h: 'host', p: 'port', u: 'uri', n: 'num-req', r: 'rate', c: 'concurrency', s: 'stats'}
