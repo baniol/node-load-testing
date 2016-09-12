@@ -1,4 +1,4 @@
-- hosts: all
+- hosts: xlarge
   sudo: true
   gather_facts: no
 

@@ -4,12 +4,12 @@
 
 - name: Download Nodejs Source
   get_url:
-    url=https://nodejs.org/dist/v{{nodejsversion}}/node-v{{nodejsversion}}-linux-x64.tar.gz
-    dest=/home/{{username}}/node/nodejs-{{nodejsversion}}.tar.gz
+    url=https://nodejs.org/dist/v{{nodejsversion}}/node-v{{nodejsversion}}-linux-x64.tar.xz
+    dest=/home/{{username}}/node/nodejs-{{nodejsversion}}.tar.xz
 
 - name: UnTar File
   unarchive:
-    src=/home/{{username}}/node/nodejs-{{nodejsversion}}.tar.gz
+    src=/home/{{username}}/node/nodejs-{{nodejsversion}}.tar.xz
     dest=/home/{{username}}/node owner={{username}} group={{username}}
     copy=no
 
