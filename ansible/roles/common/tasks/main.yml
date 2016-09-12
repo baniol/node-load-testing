@@ -1,0 +1,27 @@
+---
+  - name: set hostname
+    hostname: name={{ hostname  }}
+  - name: add hostname to hosts file
+    lineinfile: dest=/etc/hosts regexp='127\.0\.0\.1' line='127.0.0.1   localhost localhost.localdomain {{ hostname  }}' owner=root group=root mode=0644
+
+  - name: upgrade packages
+    yum: name=* state=latest
+
+  - name: install necessary packages
+    yum: name={{ item }} state=latest
+    with_items:
+      - make
+      - glibc-devel
+      - gcc
+      - gcc-c++
+      - net-tools
+      - lsof
+
+  # - name: ensure git is installed
+  #   yum: name=git state=latest
+  # - name: Set git user
+  #   shell: "git config --global user.name \"{{git_user}}\""
+  #   sudo: false
+  # - name: Set git email
+  #   shell: "git config --global user.email {{git_email}}"
+  #   sudo: false

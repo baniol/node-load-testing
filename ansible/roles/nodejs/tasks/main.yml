@@ -1,0 +1,17 @@
+---
+- name: Ensure Node Dir is present
+  file: path=/home/{{username}}/node state=directory owner={{username}} group={{username}} mode=0755
+
+- name: Download Nodejs Source
+  get_url:
+    url=https://nodejs.org/dist/v{{nodejsversion}}/node-v{{nodejsversion}}-linux-x64.tar.gz
+    dest=/home/{{username}}/node/nodejs-{{nodejsversion}}.tar.gz
+
+- name: UnTar File
+  unarchive:
+    src=/home/{{username}}/node/nodejs-{{nodejsversion}}.tar.gz
+    dest=/home/{{username}}/node owner={{username}} group={{username}}
+    copy=no
+
+- name: Add node bin to $PATH
+  lineinfile: dest=/home/{{username}}/.bash_profile line="PATH=$PATH:$HOME/node/node-v{{nodejsversion}}-linux-x64/bin" insertbefore="export PATH"
